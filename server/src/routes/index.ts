@@ -1,9 +1,4 @@
-import express from 'express';
-const router = express.Router();
-
-/* GET home page. */
-router.get('/', function(req, res, next) {
-  res.json({ title: 'Express' });
-});
-
-export default router;
+export { default as auth } from "./auth.route";
+export { default as files } from "./files.route";
+export { default as users } from "./users.route";
+export { default as folders } from "./folders.route";
