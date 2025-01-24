@@ -43,21 +43,37 @@ const FileList = () => {
 
     const handleFileClick = (fileId: string) => {
         console.log('File clicked:', fileId);
+        let path;
+        if (currentFolder?.path.endsWith('/')) {
+            path = currentFolder.path.slice(0, -1);
+        } else {
+            path = currentFolder?.path;
+        }
+
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/files/download`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `${token}`
             },
-            body: JSON.stringify({ fileId })
+            body: JSON.stringify({ path: path, fileId: fileId})
         }).then(res => res.json())
-            .then(data => {
+            .then(async data => {
                 console.log("data from files/download", {data});
-                // write this data into folder list state
-                const newFilesData = data.files.map((file: any) => {
-                    return ({...file})
-                })
-                setFiles(newFilesData);
+                const signedUrl = data.signedUrl;
+                const receivedFile = await fetch(signedUrl, {
+                    method: 'GET',
+                });
+                const blob = await receivedFile.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = data.key || 'downloadedFile';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+
             }).catch(err => {
                 console.log("error in fetching files")
                 console.log(err)

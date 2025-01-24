@@ -139,29 +139,31 @@ router.post("/sign-s3", async (req, res) => {
 router.post("/download", async (req, res) => {
   const { path, fileId, } = req.body;
   const { id } = req.user as User;
-  let folderPath = "", parentFodlerPath = "";
+  let folderPath = ""
   let fileName = "";
-  prisma.file.findUnique({
-    where: {
-      id: fileId,
-    },
-  }).then((file) => {
+  try {
+    const file = await prisma.file.findUnique({
+      where: {
+        id: fileId,
+      },
+    });
+
     console.log("file - ", file);
     if (!file) {
       return res.status(400).json({ message: "File not found" });
     }
     fileName = file.name;
-  }).catch((err) => {
+    console.log("fileName - ", fileName);
+    if (path === "") {
+      folderPath = `${fileName}`;
+    } else {
+      folderPath = `${path}/${fileName}`;
+    }
+  } catch (err) {
     console.log("err - ", err);
     return res.status(400).json({ message: "Error in fetching file" });
-  });
-  if (path === "") {
-    folderPath = `${id}/${fileName}`;
-    parentFodlerPath = `${id}/`;
-  } else {
-    folderPath = `${id}/${path}/${fileName}`;
-    parentFodlerPath = `${id}/${path}/`;
   }
+  console.log("fileName - ", fileName);
 
   console.log("key - ", folderPath);
 
@@ -176,7 +178,7 @@ router.post("/download", async (req, res) => {
     // const signedUrl = await getSignedUrlUtil(client, command, { expiresIn: 3600 });
     const signedUrl = await s3.getSignedUrl("getObject", s3Params);
     console.log("signedUrl - ", signedUrl);
-    res.status(200).json({ signedUrl, key: folderPath });
+    res.status(200).json({ signedUrl, key: fileName });
   } catch (err) {
     console.log("err - ", err);
     res.status(400).json({ message: "Error in fetching signed url" });
